@@ -373,7 +373,13 @@ event log_writing (i++)
       fclose(fp);
       fprintf(ferr, "%d %.8e %.8e %.8e\n", i, dt, t, ke);
 
-      if (ke > 1e2 && i > 10) {
+      // The template's 1e2 threshold is wrong for this case: the axisymmetric
+      // rim mass grows like R^2, so the physical kinetic energy grows without
+      // bound (~2e4 by t = 40 at mu1 = 0.05) and crossed 1e2 at t = 6.4 on a
+      // perfectly healthy run (dt steady, R(t) smooth). A genuine blow-up in
+      // this family reaches 1e6+ within a few steps (recorded defect history:
+      // ke hit 5.5e6/3.2e8 by i = 2). Guard at 1e6.
+      if (ke > 1e6 && i > 10) {
         fprintf(ferr, "ERROR: kinetic energy blew up.\n");
         stop = 1;
         dump_state = 1;
