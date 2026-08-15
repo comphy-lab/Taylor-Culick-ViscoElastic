@@ -228,13 +228,30 @@ event init (t = 0)
     In `axi.h` the metric is `cm = y`, so `sum f dv()` is the liquid volume
     divided by `2*pi`. For the flat sheet `0 < x < h0/2`,
     `hole0 + h0/2 < y < L0`, that is
-    `(h0/2)(L0^2 - (hole0 + h0/2)^2)/2`; the semicircular rim of radius
-    `h0/2` centred on `(0, hole0 + h0/2)` contributes its area times its
-    centroid radius, `(pi h0^2/8)(hole0 + h0/2)`.
+    `(h0/2)(L0^2 - (hole0 + h0/2)^2)/2`.
+
+    The rim is a QUARTER disc, not a half one. The circle of radius `h0/2`
+    about `(0, yrim)` is cut twice: by the midplane symmetry at `x = 0`, and
+    by the `y < yrim` branch of the `fraction()` expression above, since for
+    `y >= yrim` the flat-sheet branch already covers that band at full
+    thickness. Its area is therefore `pi h0^2/16`, and the centroid of a
+    quarter disc of radius `a` lying below `yrim` sits at `yrim - 4a/(3 pi)`,
+    not at `yrim`, so by Pappus the contribution is
+    `(pi h0^2/16)(yrim - 4(h0/2)/(3 pi))`.
+
+    Getting this wrong is how the check read `relative error 1.35e-4` for
+    every run at every resolution: the half-disc form overstates the rim by
+    `0.336`, which is 0.013% of the total and so sat quietly inside the 5%
+    tolerance while looking like a small mesh error. With the quarter-disc
+    form the residual is the discretisation error and nothing else, which is
+    what makes this a guard rather than a decoration. The tolerance stays at
+    5% deliberately: it exists to catch a sheet smeared across one cell on a
+    coarse initial grid, not to police quadrature.
     */
     const double yrim = hole0 + h0/2.;
+    const double arim = h0/2.;
     const double expected = (h0/2.)*(sq(L0) - sq(yrim))/2.
-      + (pi*sq(h0)/8.)*yrim;
+      + (pi*sq(h0)/16.)*(yrim - 4.*arim/(3.*pi));
     double vol = 0.;
     foreach (reduction(+:vol))
       vol += f[]*dv();
@@ -246,7 +263,14 @@ event init (t = 0)
     if (fabs(vol - expected) > 0.05*expected) {
       fprintf(ferr, "ERROR: initial volume fraction is wrong; the sheet is "
               "probably unresolved on the initial grid.\n");
-      return 1;
+      /**
+      `return 1` from an event only stops the time loop; the process still
+      exits 0 and a batch runner or systemd unit records success. A guard
+      that reports a wrong initial condition as a clean early finish is
+      worse than no guard, so fail the process itself.
+      */
+      fflush(ferr);
+      exit(1);
     }
   }
 }
@@ -324,7 +348,17 @@ event tip_output (t = 0.; t += tsnap)
                     "MAXlevel %d Ldomain %g\n"
                     "# t R_tip R_tip_vof R_tip_global\n",
                 CaseNo, mu1, rho1, mu2, rho2, MAXlevel, Ldomain);
-      fprintf(fp, "%.8e %.8e %.8e %.8e\n", t, Rtip, Rvof, Rtipglobal);
+      /**
+      `Rtip` and `Rtipglobal` are reduction minima seeded at `HUGE`. If a
+      band ever contains no interface -- after pinch-off, or if the rim
+      leaves the midplane band entirely -- the seed survives the reduction
+      and would be written as a radius of order `1e308`. Emit `nan` instead,
+      so a gap in the record reads as missing rather than as a real number
+      that would silently poison any downstream fit or plot.
+      */
+      fprintf(fp, "%.8e %.8e %.8e %.8e\n", t,
+              Rtip == HUGE ? nan("") : Rtip, Rvof,
+              Rtipglobal == HUGE ? nan("") : Rtipglobal);
       fclose(fp);
     }
   }
