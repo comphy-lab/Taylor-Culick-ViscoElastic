@@ -113,7 +113,7 @@ int main (int argc, char const * argv[])
 
   if (CaseNo < 1000 || MAXlevel < 1 || MAXlevel > 20 ||
       MINlevel < 1 || MINlevel > MAXlevel || Ldomain <= 0. ||
-      tmax <= 0. || tsnap <= 0. || dtmax <= 0. || dtmax > tmax ||
+      tmax <= 0. || tsnap < 1e-4 || dtmax <= 0. || dtmax > tmax ||
       rho1 <= 0. || rho2 <= 0. || mu1 < 0. || mu2 < 0.) {
     fprintf(ferr, "ERROR: invalid runtime parameters.\n");
     return 1;
@@ -283,6 +283,16 @@ components of the parent elastic case are gone.
 */
 scalar KAPPA[];
 
+/**
+`MINlevel` deliberately does not appear here. It sets the pre-refinement of
+the initial grid, where a plain `fraction()` on a coarse tree would smear the
+sheet across one cell; adaptation afterwards is free to coarsen the quiescent
+far field below it, which is most of a domain one hundred thicknesses wide.
+Passing it as `adapt_wavelet`'s minimum would enforce a floor of
+`Ldomain/2^MINlevel` everywhere and buy nothing physical. Every sibling case
+in this directory does the same, and the runs the validation document reports
+were produced this way; do not "fix" the asymmetry without rerunning them.
+*/
 event adapt_mesh (i++)
 {
   curvature(f, KAPPA);
@@ -370,7 +380,15 @@ event tip_output (t = 0.; t += tsnap)
 event writing_files (t = 0.; t += tsnap)
 {
   dump(file = dumpFile);
-  sprintf(snapshotFile, "intermediate/snapshot-%5.4f", t);
+  /**
+  Four decimal places, so `tsnap` below 1e-4 would make two consecutive
+  snapshots share a filename and the second would silently overwrite the
+  first. The width is not widened here because the existing records and the
+  post-processing that reads them both assume this pattern; `tsnap` is
+  rejected below the printable resolution in `main()` instead.
+  */
+  snprintf(snapshotFile, sizeof(snapshotFile),
+           "intermediate/snapshot-%5.4f", t);
   dump(file = snapshotFile);
 }
 
@@ -418,7 +436,25 @@ event log_writing (i++)
         stop = 1;
         dump_state = 1;
       }
-      if (ke < 1e-8 && i > 10) {
+      /**
+      The decay guard must not fire on the way UP. The sheet starts from
+      rest, so `ke` is exactly 0 at `i = 0` and 1.21e-9 at `i = 1` -- both
+      below the 1e-8 stopping threshold -- and only passes 1e-5 by `i = 2`.
+      A bare step count would be a coincidence rather than a reason: it
+      happens to hold here because ten steps is well clear of two, but a
+      smaller `dtmax`, a larger `MAXlevel` or a more viscous case moves the
+      crossing without moving the count. Latch on the flow having started
+      instead, so the guard means "the motion died" rather than "the motion
+      has not begun yet".
+
+      The latch resets on restart, so a run resumed straight into a decaying
+      tail keeps going until `ke` rises once more. That is the safe direction
+      to fail: a missed stop costs wall clock, a false stop costs the run.
+      */
+      static int ke_has_risen = 0;
+      if (ke > 1e-6)
+        ke_has_risen = 1;
+      if (ke_has_risen && ke < 1e-8) {
         fprintf(ferr, "Kinetic energy decayed below the stopping threshold.\n");
         stop = 1;
         dump_state = 1;
