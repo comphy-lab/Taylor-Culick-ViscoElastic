@@ -210,19 +210,21 @@ int main (int argc, char const * argv[])
   TOLERANCE = 1e-4;
   CFL = 0.5;
 
-  fprintf(ferr,
-          "PLANAR NEWTONIAN Taylor-Culick\n"
-          "CaseNo=%d MAXlevel=%d MINlevel=%d Ldomain=%g "
-          "tmax=%g tsnap=%g tout=%g dtmax=%g VELERR=%g\n",
-          CaseNo, MAXlevel, MINlevel, Ldomain,
-          tmax, tsnap, tout, dtmax, VELERR);
-  fprintf(ferr,
-          "liquid: rho=%g mu=%g ; gas: rho=%g mu=%g\n",
-          rho1, mu1, rho2, mu2);
-  fprintf(ferr,
-          "h0=%g xtip0=%g V_TC=%g tau_vis=%g Delta_min=%g\n",
-          h0, xtip0, sqrt(2.*f.sigma/(rho1*h0)), tauvis,
-          Ldomain/(1 << MAXlevel));
+  if (pid() == 0) {
+    fprintf(ferr,
+            "PLANAR NEWTONIAN Taylor-Culick\n"
+            "CaseNo=%d MAXlevel=%d MINlevel=%d Ldomain=%g "
+            "tmax=%g tsnap=%g tout=%g dtmax=%g VELERR=%g\n",
+            CaseNo, MAXlevel, MINlevel, Ldomain,
+            tmax, tsnap, tout, dtmax, VELERR);
+    fprintf(ferr,
+            "liquid: rho=%g mu=%g ; gas: rho=%g mu=%g\n",
+            rho1, mu1, rho2, mu2);
+    fprintf(ferr,
+            "h0=%g xtip0=%g V_TC=%g tau_vis=%g Delta_min=%g\n",
+            h0, xtip0, sqrt(2.*f.sigma/(rho1*h0)), tauvis,
+            Ldomain/(1 << MAXlevel));
+  }
 
   run();
 }
@@ -248,7 +250,7 @@ event init (t = 0)
     first timestep.
 
     The `- Delta` terms are load-bearing.  `refine()` evaluates its
-    condition at cell *centres*, so a plain `y < h0/2 + 0.1` test never
+    condition at cell *centres*, so a plain `y < h0/2 + pad` test never
     fires on the initial coarse grid whenever `L0/2^MINlevel` is larger
     than about `h0`: the bottom row of cells has its centre above the
     band it is supposed to resolve, nothing is refined, and `fraction()`
@@ -258,13 +260,38 @@ event init (t = 0)
     `L0 = 128` and `MINlevel = 6` this put the tip at `x = 1.573`
     instead of `x = xtip0 = 1`.  Testing the cell's lower edge instead of
     its centre makes the pre-refinement independent of `MINlevel`.
+
+    The padding is a fraction of `h0`, rather than a fixed length, so the
+    resolved band stays proportionate when the sheet thickness changes.
     */
-    refine(y - Delta < h0/2. + 0.1 && level < MAXlevel - 3);
-    refine(x - Delta < xc + 2.*h0 && y - Delta < h0/2. + 0.1 &&
+    const double pad = 0.1*h0;
+    refine(y - Delta < h0/2. + pad && level < MAXlevel - 3);
+    refine(x - Delta < xc + 2.*h0 && y - Delta < h0/2. + pad &&
            level < MAXlevel);
     fraction(f, x < xc
              ? sq(h0/2.) - (sq(x - xc) + sq(y))
              : h0/2. - y);
+
+    /**
+    Check the initial half-sheet area against the planar analytic geometry:
+    the flat sheet contributes `(h0/2)(L0 - xc)` and the semicircular cap
+    contributes `pi h0^2/8`.  This turns the documented smeared-interface
+    failure into an immediate error instead of a plausible-looking run.
+    */
+    const double expected = (h0/2.)*(L0 - xc) + pi*sq(h0)/8.;
+    double area = 0.;
+    foreach (reduction(+:area))
+      area += f[]*dv();
+
+    if (pid() == 0)
+      fprintf(ferr, "initial half-sheet area = %g (expected %g, "
+              "relative error %.3g)\n",
+              area, expected, fabs(area - expected)/expected);
+    if (fabs(area - expected) > 0.05*expected) {
+      fprintf(ferr, "ERROR: initial volume fraction is wrong; the sheet is "
+              "probably unresolved on the initial grid.\n");
+      return 1;
+    }
   }
 }
 
@@ -327,7 +354,10 @@ event tip_output (t = 0.; t += tout)
 
   if (pid() == 0) {
     FILE * fp = fopen(tipFile, t == 0. ? "w" : "a");
-    if (fp) {
+    if (!fp)
+      fprintf(ferr, "tip_output: failed to open %s at t = %g, "
+              "sample dropped\n", tipFile, t);
+    else {
       if (t == 0.)
         fprintf(fp, "# planar Newtonian Taylor-Culick, CaseNo %d\n"
                     "# mu1 %g rho1 %g mu2 %g rho2 %g "
