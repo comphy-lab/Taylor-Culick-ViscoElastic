@@ -336,9 +336,21 @@ event tip_output (t = 0.; t += tout)
                     "# t tstar x_tip x_tip_vof x_tip_global\n",
                 CaseNo, mu1, rho1, mu2, rho2, MAXlevel, Ldomain,
                 tauvis, sqrt(2.*f.sigma/(rho1*h0)));
+      /**
+      `xtip` and `xtipglobal` are reduction minima seeded at `HUGE`. If a
+      band ever holds no interface -- after pinch-off, or if the rim leaves
+      the midplane band -- the seed survives the reduction and would be
+      written as a tip position of order `1e308`. Emit `nan` instead, so a
+      gap in the record reads as missing rather than as a real number that
+      would silently poison a downstream fit. `nan`, not Basilisk's
+      `nodata`, because `nodata` is itself a large finite sentinel and would
+      land in the data column looking like a coordinate; the axisymmetric
+      counterpart does the same.
+      */
       fprintf(fp, "%.8e %.8e %.8e %.8e %.8e\n",
               t, tauvis > 0. ? t/tauvis : 0.,
-              xtip, xvof, xtipglobal);
+              xtip == HUGE ? nan("") : xtip, xvof,
+              xtipglobal == HUGE ? nan("") : xtipglobal);
       fclose(fp);
     }
   }
