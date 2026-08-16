@@ -1,0 +1,31 @@
+# Axisymmetric Taylor--Culick default case (Newtonian, non-elastic build).
+#
+# rho1 = sigma = 1, hole0 = h0 = 1 (hardcoded in the case source). mu1 is the
+# liquid viscosity directly (no Ohnesorge non-dimensionalisation applied
+# here, matching TaylorCulick.c's convention).
+#
+# Delta_min = Ldomain/2^MAXlevel = 100/4096 ~ 0.0244, about 41 cells across
+# h0 -- comparable to the validated planar resolution.
+#
+# dtmax is a request, not the achieved step: tension.h's own stability event
+# narrows dtmax to the capillary limit dt_sigma =
+# sqrt(rho_m*Delta_min^3/(pi*sigma)) ~ 1.5e-3 at this resolution (see the
+# dt_sigma value the case prints at startup). Requesting dtmax well above
+# that -- as the validated planar Newtonian case does (dtmax=5e-3 there) --
+# lets the capillary cap actually govern instead of pinning every step to an
+# arbitrarily small floor.
+CaseNo = 1000
+MAXlevel = 12
+MINlevel = 6
+Ldomain = 100.
+tmax = 40.
+tsnap = 1.0
+dtmax = 5e-3
+
+# f = 1: retracting film.
+rho1 = 1.
+mu1 = 0.05
+
+# f = 0: surrounding gas.
+rho2 = 1e-3
+mu2 = 1e-5
