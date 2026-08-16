@@ -274,11 +274,12 @@ event init (t = 0)
 
     /**
     Check the initial half-sheet area against the planar analytic geometry:
-    the flat sheet contributes `(h0/2)(L0 - xc)` and the semicircular cap
-    contributes `pi h0^2/8`.  This turns the documented smeared-interface
+    the flat sheet contributes `(h0/2)(L0 - xc)`.  In the simulated
+    half-domain, `x < xc` and `y >= 0` retain one quarter of the circular rim,
+    which contributes `pi h0^2/16`.  This turns the smeared-interface
     failure into an immediate error instead of a plausible-looking run.
     */
-    const double expected = (h0/2.)*(L0 - xc) + pi*sq(h0)/8.;
+    const double expected = (h0/2.)*(L0 - xc) + pi*sq(h0)/16.;
     double area = 0.;
     foreach (reduction(+:area))
       area += f[]*dv();
@@ -290,7 +291,13 @@ event init (t = 0)
     if (fabs(area - expected) > 0.05*expected) {
       fprintf(ferr, "ERROR: initial volume fraction is wrong; the sheet is "
               "probably unresolved on the initial grid.\n");
-      return 1;
+      /**
+      Returning non-zero from an event stops the time loop but leaves the
+      process status successful.  Fail the process so batch runners cannot
+      accept a rejected initial condition as a completed run.
+      */
+      fflush(ferr);
+      exit(1);
     }
   }
 }
