@@ -1,4 +1,4 @@
-# Elastic Taylor--Culick
+# Taylor-Culick-ViscoElastic
 
 Taylor--Culick retraction cases in Basilisk C, organised using the CoMPhy
 project layout. There are two geometries -- axisymmetric hole opening and a

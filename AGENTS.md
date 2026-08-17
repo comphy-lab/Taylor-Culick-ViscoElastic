@@ -1,4 +1,4 @@
-# Elastic Taylor--Culick repository guidance
+# Taylor-Culick-ViscoElastic repository guidance
 
 This is a CoMPhy Basilisk project. Keep the canonical structure visible:
 
