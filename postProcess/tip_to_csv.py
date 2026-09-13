@@ -16,7 +16,7 @@ Non-dimensionalisation: rho = sigma = h0 = 1 with h0 the FULL sheet thickness
 gives V_TC = sqrt(2); the tip log header records the run's actual
 V_TC = sqrt(2*sigma/(rho1*h0)), which this script parses rather than
 assuming rho1 = h0 = 1.  Savva & Bush (JFM 626, 2009) use the half-thickness,
-so a case quoted at Oh_SB is run with mu = sqrt(2) * Oh_SB; their viscous time
+so a case quoted at Oh is run with mu = sqrt(2) * Oh; their viscous time
 is tau_vis = mu/2 and their reduced time is t* = t / tau_vis.
 
 Usage

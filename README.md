@@ -30,7 +30,7 @@ planar semi-infinite sheet -- sharing one constitutive path: the scalar
 ├── scripts/params.sh - Shared shell parameter helpers
 ├── default.params - Purely elastic axisymmetric default (lambda1 = 1e30)
 ├── default-viscoelastic.params - Finite-relaxation axisymmetric default
-├── default-planar.params - Planar Newtonian default (Oh_SB = 0.1)
+├── default-planar.params - Planar Newtonian default (Oh = 0.1)
 ├── sweep.params - Two-combination sweep definition
 ├── runSimulation.sh - Single-case compile/run driver
 ├── runParameterSweep.sh - Deterministic Cartesian sweep driver
@@ -197,7 +197,8 @@ the edge travels at most `sqrt(2)*t`, so keep `Ldomain` well above
 Lengths are scaled with the **full** thickness `h0`, densities with the liquid
 density, and stresses with `sigma/h0`. With `rho1 = sigma = h0 = 1`:
 
-- `mu1` is the Ohnesorge number `Oh = mu/sqrt(rho*sigma*h0)`;
+- `mu1` is the coded dynamic viscosity `mu/sqrt(rho*sigma*h0)`. It is NOT `Oh`:
+  the project's Ohnesorge number is `Oh = mu/sqrt(2*h0*rho*sigma) = mu1/sqrt(2)`;
 - the Taylor--Culick speed is `V_TC = sqrt(2*sigma/(rho*h0)) = sqrt(2)`;
 - the capillary time is `sqrt(rho*h0^3/sigma) = 1`.
 
@@ -205,10 +206,11 @@ Savva & Bush (*JFM* **626**, 2009) put the **half**-thickness in their
 Ohnesorge number,
 
 ```
-Oh_SB = mu/sqrt(2*h0*rho*sigma) = Oh/sqrt(2),
+Oh = mu/sqrt(2*h0*rho*sigma) = mu1/sqrt(2),
 ```
 
-so a case quoted at `Oh_SB` is run here with `mu1 = sqrt(2)*Oh_SB` -- the
+which is this project's only `Oh`; the coded `mu1` is not `Oh` and the two
+differ by `sqrt(2)`. A case quoted at `Oh` is run here with `mu1 = sqrt(2)*Oh` -- the
 factor of `sqrt(2)` is easy to lose. Their viscous time is
 `tau_vis = mu*h0/(2*sigma) = mu1/2` and their reduced time is
 `t* = t/tau_vis`. Both clocks are written to the tip file.

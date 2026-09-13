@@ -2,15 +2,15 @@
 #
 # rho1 = sigma = h0 = 1 with h0 the FULL sheet thickness, so the
 # half-thickness is 0.5 and the Taylor--Culick speed is V_TC = sqrt(2).
-# mu1 is the Ohnesorge number Oh = mu/sqrt(rho*sigma*h0).
+# mu1 is the coded dynamic viscosity mu_l = mu/sqrt(rho*sigma*h0).
 #
 # Savva & Bush (JFM 626, 2009) use the half-thickness in their Ohnesorge
-# number, Oh_SB = mu/sqrt(2*h0*rho*sigma) = Oh/sqrt(2), so a case quoted at
-# Oh_SB is run here with mu1 = sqrt(2)*Oh_SB.  Their viscous time is
+# number, Oh = mu/sqrt(2*h0*rho*sigma) = mu1/sqrt(2), so a case quoted at
+# Oh is run here with mu1 = sqrt(2)*Oh.  Their viscous time is
 # tau_vis = mu1/2 and their reduced time is t* = t/tau_vis; the tip file
 # reports both clocks.
 #
-# The values below are Oh_SB = 0.1, i.e. mu1 = sqrt(2)*0.1.
+# The values below are Oh = 0.1, i.e. mu1 = sqrt(2)*0.1.
 CaseNo = 1000
 MAXlevel = 12
 MINlevel = 6

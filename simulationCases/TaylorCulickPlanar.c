@@ -44,13 +44,15 @@ Lengths are scaled with the **full** sheet thickness $h_0$, so the
 half-thickness is $h_0/2$; densities with $\rho_l$; and stresses with
 $\sigma/h_0$.  Setting $\rho_l = \sigma = h_0 = 1$ gives
 
-$$\mu_l = Oh = \frac{\mu}{\sqrt{\rho\sigma h_0}}, \qquad
+$$\mu_l = \frac{\mu}{\sqrt{\rho\sigma h_0}}, \qquad
   V_{TC} = \sqrt{\frac{2\sigma}{\rho h_0}} = \sqrt{2}.$$
 
 Savva & Bush (*JFM* **626**, 2009) instead use the half-thickness in their
 Ohnesorge number,
-$$Oh_{SB} = \frac{\mu}{\sqrt{2 h_0 \rho \sigma}} = \frac{Oh}{\sqrt{2}},$$
-so a case at a quoted $Oh_{SB}$ is run here with `mu1 = sqrt(2)*Oh_SB`.
+$$Oh = \frac{\mu}{\sqrt{2 h_0 \rho \sigma}} = \frac{\mu_l}{\sqrt{2}},$$
+which is this project's only $Oh$. The coded `mu1` is $\mu_l$, NOT $Oh$; the
+two differ by $\sqrt{2}$. A case at a quoted $Oh$ is run with
+`mu1 = sqrt(2)*Oh`.
 Their viscous time is $\tau_{vis} = \mu h_0 / (2\sigma) = \mu_l/2$ and their
 reduced time is $t^* = t/\tau_{vis}$; both are reported in the tip file so
 results can be plotted on either clock.

@@ -37,11 +37,11 @@ initial radius `hole0` becomes a planar edge at initial position `xtip0`.
 ## Non-dimensionalisation
 
 $\rho_l = 1$, $\sigma = 1$, $h_0 = 1$ (**full** thickness, half-thickness
-$1/2$), so $\mu_l = Oh = \mu/\sqrt{\rho\sigma h_0}$ and the Taylor--Culick
+$1/2$), so $\mu_l = \mu/\sqrt{\rho\sigma h_0}$ and the Taylor--Culick
 speed is
 $$V_{TC} = \sqrt{2\sigma/(\rho h_0)} = \sqrt{2}.$$
-Savva & Bush use $Oh_{SB} = \mu/\sqrt{2 h_0 \rho \sigma}$, hence
-$\mu = \sqrt{2}\,Oh_{SB}$, and their viscous clock is
+Savva & Bush use $Oh = \mu/\sqrt{2 h_0 \rho \sigma}$, hence
+$\mu = \sqrt{2}\,Oh$, and their viscous clock is
 $\tau_{vis} = \mu h_0/(2\sigma) = \mu/2$ with $t^* = t/\tau_{vis}$.
 
 ## Runtime parameters
@@ -159,7 +159,7 @@ int main (int argc, char const * argv[])
   `dt ~ 2e-2` straight after two steps of `dt ~ 1e-6` -- a jump of four
   orders of magnitude.  At `MAXlevel = 11` this is a survivable transient
   (`ke` spikes to ~1e-3 and decays), which is why it went unnoticed; at
-  `MAXlevel = 13` with `Oh_SB = 1` the same step is far beyond the capillary
+  `MAXlevel = 13` with `Oh = 1` the same step is far beyond the capillary
   and viscous stability limits, the implicit viscous solve fails to converge
   and `ke` reaches 5.5e6 by `i = 2`, i.e. the run is destroyed.
 
